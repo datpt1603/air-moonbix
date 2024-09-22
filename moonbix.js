@@ -186,11 +186,13 @@ class Moonbix {
 
             if (await this.startGame(accessToken)) {
                 if (await this.gameData()) {
-                    await this.waitWithCountdown(50);
+                    await new Promise(resolve => setTimeout(resolve, 50000));
 
                     if (await this.completeGame(accessToken)) {
                         availableTickets--;
                         this.log(`Vé còn lại: ${availableTickets}`, 'info');
+
+                        await new Promise(resolve => setTimeout(resolve, 3000));
                     } else {
                         break;
                     }
@@ -198,10 +200,9 @@ class Moonbix {
                     this.log("Không thể nhận dữ liệu game", 'error');
                     break;
                 }
-            }
-
-            if (availableTickets > 0) {
-                await new Promise(resolve => setTimeout(resolve, 3000));
+            } else {
+                this.log("Không thể bắt đầu trò chơi", 'error');
+                break;
             }
         }
 
@@ -294,7 +295,11 @@ class Moonbix {
             .split('\n')
             .filter(Boolean);
 
+        const waitTime = 60 * 60 * 1000;
+
         while (true) {
+            console.log(`Đã dùng thì đừng sợ, đã sợ thì đừng dùng...`.yellow);
+
             for (let i = 0; i < data.length; i++) {
                 const init_data = data[i];
                 const userData = JSON.parse(decodeURIComponent(init_data.split('user=')[1].split('&')[0]));
@@ -308,8 +313,11 @@ class Moonbix {
                     await this.playGameIfTicketsAvailable(authResult);
                 }
 
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 3 * 1000));
             }
+
+            console.log(`Tất cả các tài khoản được xử lý. Đang chờ đợi ${waitTime / 60000} phút trước khi bắt đầu vòng tiếp theo...`);
+            await this.waitWithCountdown(waitTime);
         }
     }
 }
