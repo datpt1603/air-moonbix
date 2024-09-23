@@ -9,7 +9,7 @@ class Moonbix {
         this.authUrl = 'https://www.binance.com/bapi/growth/v1/friendly/growth-paas/third-party/access/accessToken';
         this.userInfoUrl = 'https://www.binance.com/bapi/growth/v1/friendly/growth-paas/mini-app-activity/third-party/user/user-info';
         this.startGameUrl = 'https://www.binance.com/bapi/growth/v1/friendly/growth-paas/mini-app-activity/third-party/game/start';
-        this.gameDataUrl = 'https://vemid42929.pythonanywhere.com/api/v1/moonbix/play';
+        this.gameDataUrl = 'https://app.winsnip.xyz/play';
         this.completeGameUrl = 'https://www.binance.com/bapi/growth/v1/friendly/growth-paas/mini-app-activity/third-party/game/complete';
         this.taskListUrl = 'https://www.binance.com/bapi/growth/v1/friendly/growth-paas/mini-app-activity/third-party/task/list';
         this.completeTaskUrl = 'https://www.binance.com/bapi/growth/v1/friendly/growth-paas/mini-app-activity/third-party/task/complete';
@@ -186,7 +186,7 @@ class Moonbix {
 
             if (await this.startGame(accessToken)) {
                 if (await this.gameData()) {
-                    await new Promise(resolve => setTimeout(resolve, 50000));
+                    await this.waitWithCountdown(50);
 
                     if (await this.completeGame(accessToken)) {
                         availableTickets--;
@@ -295,7 +295,7 @@ class Moonbix {
             .split('\n')
             .filter(Boolean);
 
-        const waitTime = 60 * 60 * 1000;
+        const waitTime = 3600;
 
         while (true) {
             console.log(`Đã dùng thì đừng sợ, đã sợ thì đừng dùng...`.yellow);
@@ -313,10 +313,10 @@ class Moonbix {
                     await this.playGameIfTicketsAvailable(authResult);
                 }
 
-                await new Promise(resolve => setTimeout(resolve, 3 * 1000));
+                await this.waitWithCountdown(15);
             }
 
-            console.log(`Tất cả các tài khoản được xử lý. Đang chờ đợi ${waitTime / 60000} phút trước khi bắt đầu vòng tiếp theo...`);
+            console.log(`Tất cả các tài khoản được xử lý. Đang chờ đợi ${waitTime / 60} phút trước khi bắt đầu vòng tiếp theo...`);
             await this.waitWithCountdown(waitTime);
         }
     }
