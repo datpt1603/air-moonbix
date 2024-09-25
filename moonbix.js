@@ -3,6 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const colors = require('colors');
 const readline = require('readline');
+const crypto = require('crypto');
 
 class Moonbix {
     constructor() {
@@ -131,20 +132,85 @@ class Moonbix {
 
     async gameData() {
         try {
-            const response = await axios.post(this.gameDataUrl, this.game_response);
-
-            if (response.data.message === 'success') {
-                this.game = response.data.game;
-                this.log("Nhận dữ liệu game thành công", 'success');
-                return true;
+            const startTime = Date.now();
+            const endTime = startTime + 45000;
+            const gameTag = this.game_response.data.gameTag;
+            const itemSettings = this.game_response.data.cryptoMinerConfig.itemSettingList;
+    
+            let currentTime = startTime;
+            let score = 100;
+            const gameEvents = [];
+    
+            while (currentTime < endTime) {
+                const timeIncrement = Math.floor(Math.random() * (2500 - 1500 + 1)) + 1500;
+                currentTime += timeIncrement;
+    
+                if (currentTime >= endTime) break;
+    
+                const hookPosX = (Math.random() * (275 - 75) + 75).toFixed(3);
+                const hookPosY = (Math.random() * (251 - 199) + 199).toFixed(3);
+                const hookShotAngle = (Math.random() * 2 - 1).toFixed(3);
+                const hookHitX = (Math.random() * (400 - 100) + 100).toFixed(3);
+                const hookHitY = (Math.random() * (700 - 250) + 250).toFixed(3);
+    
+                let itemType, itemSize, points;
+    
+                const randomValue = Math.random();
+                if (randomValue < 0.6) { 
+                    const rewardItems = itemSettings.filter(item => item.type === "REWARD");
+                    const selectedReward = rewardItems[Math.floor(Math.random() * rewardItems.length)];
+                    itemType = 1;
+                    itemSize = selectedReward.size;
+                    points = Math.min(selectedReward.rewardValueList[0], 10);
+                    score = Math.min(score + points, 200); 
+                } else if (randomValue < 0.8) { 
+                    const trapItems = itemSettings.filter(item => item.type === "TRAP");
+                    const selectedTrap = trapItems[Math.floor(Math.random() * trapItems.length)];
+                    itemType = 1;
+                    itemSize = selectedTrap.size;
+                    points = Math.min(Math.abs(selectedTrap.rewardValueList[0]), 20); 
+                    score = Math.max(100, score - points); 
+                } else { 
+                    const bonusItem = itemSettings.find(item => item.type === "BONUS");
+                    if (bonusItem) {
+                        itemType = 2;
+                        itemSize = bonusItem.size;
+                        points = Math.min(bonusItem.rewardValueList[0], 15);
+                        score = Math.min(score + points, 200);
+                    } else {
+                        itemType = 0;
+                        itemSize = 0;
+                        points = 0;
+                    }
+                }
+    
+                const eventData = `${currentTime}|${hookPosX}|${hookPosY}|${hookShotAngle}|${hookHitX}|${hookHitY}|${itemType}|${itemSize}|${points}`;
+                gameEvents.push(eventData);
             }
-
-            this.log(response.data.message, 'warning');
-            return false;
+    
+            const payload = gameEvents.join(';');
+            const encryptedPayload = this.encrypt(payload, gameTag);
+    
+            this.game = {
+                payload: encryptedPayload,
+                log: score
+            };
+    
+            return true;
         } catch (error) {
-            this.log(`Lỗi khi nhận dữ liệu game: ${error.message}`, 'error');
+            this.log(`Error in getGameData: ${error.message}`, 'error');
+            this.game = null;
             return false;
         }
+    }
+
+    encrypt(text, key) {
+        const iv = crypto.randomBytes(12);
+        const ivBase64 = iv.toString('base64');
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key), ivBase64.slice(0, 16));
+        let encrypted = cipher.update(text, 'utf8', 'base64');
+        encrypted += cipher.final('base64');
+        return ivBase64 + encrypted;
     }
 
     async completeGame(accessToken) {
